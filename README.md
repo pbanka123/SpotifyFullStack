@@ -3,7 +3,7 @@ Full Stack project sourcing data from Spotify
 
 ## Installations Required
 *	Install Homebrew
-*	Install Pyenv (Good way to manage diff python versions)
+*	Install Pyenv (Good way to manage diff python versions). Use python version 3 and above
 *	pip install requests-cache
 
 ## Setup Last.FM
@@ -27,6 +27,9 @@ Create a json file "loginCreds.json" and enter in the following information
 ```
 Once this is done, in the main function of lastfm.py, update the getUserCreds() function to your credsName
 
+## Running file
+* run lastfm.py -> this obtains recent tracks from lastfm.api, cleans/adds data and dumps a json file
+* run analyzeData.py -> this goes through json output and creates metrics.
 
 ### Notes
 * Install/implement caching (for getting artist tags) https://pypi.org/project/requests-cache/
