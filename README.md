@@ -25,6 +25,8 @@ Create a json file "loginCreds.json" and enter in the following information
     } (insert comma, followed by more users you would like to have)
 ]
 ```
+Once this is done, in the main function of lastfm.py, update the getUserCreds() function to your credsName
+
 
 ### Notes
 * Install/implement caching (for getting artist tags) https://pypi.org/project/requests-cache/
