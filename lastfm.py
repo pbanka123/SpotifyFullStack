@@ -6,6 +6,7 @@ url = 'http://ws.audioscrobbler.com/2.0/'
 USER_AGENT = 'Dataquest'
 headers = {'user-agent': USER_AGENT}
 counterCache = 0 #keep track of number of times cache was utilized
+outData = [] 
 
 requests_cache.install_cache('requests_cache') #creates a local cache in directory
 
@@ -15,16 +16,24 @@ def getUserCreds(user,inFile):
         if d['credsName'].lower() == user.lower():
             return inData[ind]
 
-def getRecentlyPlayed(payload, API_KEY, username,inFile):
+def getNumberPages(payload, API_KEY, username):
+    payload['api_key'] = API_KEY
+    payload['user'] = username
+    payload['format'] = 'json'
+    response = requests.get(url, headers=headers, params=payload)
+    return response.json()['recenttracks']['@attr']['totalPages']
+
+def getRecentlyPlayed(payload, API_KEY, username,inFile,pgNum):
     # Add API key and format to the payload - need to add other pages
     payload['api_key'] = API_KEY
     payload['user'] = username
     payload['format'] = 'json'
-    # payload['page'] = '1'
+    payload['page'] = str(pgNum)
     
     response = requests.get(url, headers=headers, params=payload)
     with open(inFile,'w') as outfile:
         json.dump(response.json(),outfile,indent=4)
+    
 
 def getTopGenreTags(payload,API_KEY):
     global counterCache
@@ -80,7 +89,7 @@ def getTimeOfDay(dt):
 
 def cleanseAndWrite(inFile, outputFile,API_KEY):
     inData = json.load(open(inFile))
-    outData = []
+    global outData
     trName = inData['recenttracks']['track'][1]['name']
     arName = inData['recenttracks']['track'][1]['artist']['#text']
     dur = lastfm_get_track_duration({
@@ -91,7 +100,7 @@ def cleanseAndWrite(inFile, outputFile,API_KEY):
     prevDt = 0
     for ind, d in enumerate(inData['recenttracks']['track'][1:]):       
         each = {}
-        each['SongName'] = (d['name']) #get Track Name
+        each['SongName'] = (d['name']).strip() #get Track Name
         each['Artist'] = (d['artist']['#text']) #get Artist name
         each['Album'] = (d['album']['#text']) #get Album Name
         dt,time = dateStrip(d['date']['uts'])
@@ -115,21 +124,26 @@ def cleanseAndWrite(inFile, outputFile,API_KEY):
             prevDt = d['date']['uts']
             each['durationSec'] = duration
         outData.append(each)
-    
-    with open(outputFile,'w') as outfile:
-        json.dump(outData,outfile,indent=4)
-
 
 if __name__ == "__main__":
     # Which user credentials to use
     print("Fetching User API Credentials")
     user = getUserCreds('TeJas','loginCreds.json')
 
-    print("Getting Recent Tracks... ")
-    getRecentlyPlayed({'method': 'user.getrecenttracks'},user['API_KEY'],user['username'],user['inFile'])
-    print("Cleansing Output & Writing to Json file" )
-    cleanseAndWrite(user['inFile'],user['outFile'],user['API_KEY'])
-    print("No.of calls to artist tage cache: " + str(counterCache))
+    numPages = getNumberPages({'method': 'user.getrecenttracks'},user['API_KEY'],user['username'])
+    for x in range(1,int(numPages)+1):
+        print("Processing page number: "+str(x))
+        getRecentlyPlayed({'method': 'user.getrecenttracks'},user['API_KEY'],user['username'],user['inFile'],x)
+        cleanseAndWrite(user['inFile'],user['outFile'],user['API_KEY'])
+
+    # Dump list into file
+    with open(user['outFile'],'w') as outfile:
+        json.dump(outData,outfile,indent=4)
+    # print("Getting Recent Tracks... ")
+    # getRecentlyPlayed({'method': 'user.getrecenttracks'},user['API_KEY'],user['username'],user['inFile'])
+    # print("Cleansing Output & Writing to Json file" )
+    # cleanseAndWrite(user['inFile'],user['outFile'],user['API_KEY'])
+    print("No.of calls to artist tags cache: " + str(counterCache))
 
 
 
