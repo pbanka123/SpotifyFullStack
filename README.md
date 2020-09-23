@@ -1,4 +1,4 @@
-# SpotifyFullStack
+# Pauls SpotifyFullStack
 Full Stack project sourcing data from Spotify
 
 ## Installations Required
